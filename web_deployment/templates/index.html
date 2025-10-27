@@ -1,0 +1,1604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Downloader - YouTube, Instagram, Facebook</title>
+    <link rel="icon" type="image/x-icon" href="/static/icon.ico">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: linear-gradient(135deg, #000000 0%, #18295b 100%);
+            --bg-secondary: rgba(102, 102, 102, 0.2);
+            --bg-input: rgba(0, 0, 0, 0.3);
+            --bg-input-focus: rgba(0, 0, 0, 0.5);
+            --color-primary: #18295b;
+            --color-secondary: #666666;
+            --color-text: #ffffff;
+            --color-border: #666666;
+            --color-success: #28a745;
+            --color-error: #dc3545;
+            --shadow: rgba(0, 0, 0, 0.5);
+        }
+
+        body.light-mode {
+            --bg-primary: linear-gradient(135deg, #f0f0f0 0%, #a8b9e0 100%);
+            --bg-secondary: rgba(255, 255, 255, 0.8);
+            --bg-input: rgba(255, 255, 255, 0.5);
+            --bg-input-focus: rgba(255, 255, 255, 0.8);
+            --color-primary: #18295b;
+            --color-secondary: #333333;
+            --color-text: #000000;
+            --color-border: #cccccc;
+            --shadow: rgba(0, 0, 0, 0.2);
+        }
+
+        @keyframes gradientMove {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(-45deg, #000000, #0a0f1f, #18295b, #1a3a7a, #18295b, #0a0f1f, #000000);
+            background-size: 400% 400%;
+            animation: gradientMove 15s ease infinite;
+            color: var(--color-text);
+            min-height: 100vh;
+            padding: 20px;
+            transition: color 0.3s ease;
+        }
+
+        body.light-mode {
+            background: linear-gradient(-45deg, #f0f0f0, #e0e8f5, #a8b9e0, #8fa8d9, #a8b9e0, #e0e8f5, #f0f0f0);
+            background-size: 400% 400%;
+            animation: gradientMove 15s ease infinite;
+        }
+
+        /* Floating particles animation */
+        body::before,
+        body::after {
+            content: '';
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        body::before {
+            background-image:
+                radial-gradient(circle at 20% 30%, rgba(24, 41, 91, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(42, 79, 159, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(26, 58, 122, 0.1) 0%, transparent 50%);
+            animation: floatParticles 20s ease-in-out infinite;
+        }
+
+        body::after {
+            background-image:
+                radial-gradient(2px 2px at 20% 30%, white, transparent),
+                radial-gradient(2px 2px at 60% 70%, white, transparent),
+                radial-gradient(1px 1px at 50% 50%, white, transparent),
+                radial-gradient(1px 1px at 80% 10%, white, transparent),
+                radial-gradient(2px 2px at 90% 60%, white, transparent),
+                radial-gradient(1px 1px at 33% 80%, white, transparent),
+                radial-gradient(1px 1px at 15% 60%, white, transparent);
+            background-size: 200% 200%;
+            background-position: 0% 0%;
+            opacity: 0.3;
+            animation: starsFloat 100s linear infinite;
+        }
+
+        @keyframes starsFloat {
+            0% {
+                background-position: 0% 0%;
+            }
+            100% {
+                background-position: 100% 100%;
+            }
+        }
+
+        body.light-mode::before {
+            background-image:
+                radial-gradient(circle at 20% 30%, rgba(168, 185, 224, 0.2) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(143, 168, 217, 0.2) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(168, 185, 224, 0.15) 0%, transparent 50%);
+        }
+
+        body.light-mode::after {
+            opacity: 0.1;
+        }
+
+        @keyframes floatParticles {
+            0%, 100% {
+                transform: translate(0, 0) scale(1);
+                opacity: 1;
+            }
+            33% {
+                transform: translate(30px, -30px) scale(1.1);
+                opacity: 0.8;
+            }
+            66% {
+                transform: translate(-20px, 20px) scale(0.9);
+                opacity: 0.9;
+            }
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--bg-secondary);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px var(--shadow), 0 0 100px rgba(24, 41, 91, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            z-index: 1;
+            animation: containerEntry 0.6s ease-out;
+        }
+
+        @keyframes containerEntry {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* Glow effect on container */
+        .container::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #18295b, #2a4f9f, #18295b);
+            border-radius: 20px;
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            filter: blur(10px);
+        }
+
+        .container:hover::before {
+            opacity: 0.3;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--color-primary);
+            border: none;
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            cursor: pointer;
+            font-size: 1.3em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(24, 41, 91, 0.4);
+        }
+
+        .theme-toggle:hover {
+            transform: rotate(20deg) scale(1.1);
+            box-shadow: 0 6px 25px rgba(24, 41, 91, 0.6);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 2px solid var(--color-primary);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            color: var(--color-text);
+            text-shadow: 0 0 20px rgba(24, 41, 91, 0.8), 0 0 40px rgba(24, 41, 91, 0.4);
+            margin-bottom: 10px;
+            animation: titleGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes titleGlow {
+            0%, 100% {
+                text-shadow: 0 0 20px rgba(24, 41, 91, 0.8), 0 0 40px rgba(24, 41, 91, 0.4);
+            }
+            50% {
+                text-shadow: 0 0 30px rgba(24, 41, 91, 1), 0 0 60px rgba(42, 79, 159, 0.6);
+            }
+        }
+
+        .header p {
+            color: var(--color-secondary);
+            font-size: 1.1em;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .platform-selector {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .platform-btn {
+            flex: 1;
+            min-width: 150px;
+            padding: 15px 25px;
+            background: var(--color-primary);
+            border: 2px solid transparent;
+            border-radius: 12px;
+            color: #ffffff;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .platform-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .platform-btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .platform-btn:hover {
+            background: #2a3f7d;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(24, 41, 91, 0.5), 0 0 30px rgba(24, 41, 91, 0.3);
+        }
+
+        .platform-btn.active {
+            background: linear-gradient(135deg, #18295b, #2a4f9f);
+            border-color: var(--color-text);
+            box-shadow: 0 5px 30px rgba(24, 41, 91, 0.8), 0 0 50px rgba(42, 79, 159, 0.4);
+            animation: buttonPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes buttonPulse {
+            0%, 100% {
+                box-shadow: 0 5px 30px rgba(24, 41, 91, 0.8), 0 0 50px rgba(42, 79, 159, 0.4);
+            }
+            50% {
+                box-shadow: 0 5px 30px rgba(24, 41, 91, 1), 0 0 60px rgba(42, 79, 159, 0.6);
+            }
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            color: var(--color-text);
+            font-size: 1.1em;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 15px;
+            padding-right: 40px;
+            background: var(--bg-input);
+            border: 2px solid var(--color-border);
+            border-radius: 10px;
+            color: var(--color-text);
+            font-size: 1em;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23666666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 20px;
+        }
+
+        .form-group input {
+            cursor: text;
+            background-image: none;
+            padding-right: 15px;
+        }
+
+        .form-group select:hover {
+            border-color: var(--color-primary);
+            background-color: var(--bg-input-focus);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(24, 41, 91, 0.2);
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            background: var(--bg-input-focus);
+            box-shadow: 0 0 20px rgba(24, 41, 91, 0.4), 0 0 40px rgba(42, 79, 159, 0.2);
+            transform: translateY(-2px);
+            animation: inputGlow 1.5s ease-in-out infinite;
+        }
+
+        @keyframes inputGlow {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(24, 41, 91, 0.4), 0 0 40px rgba(42, 79, 159, 0.2);
+            }
+            50% {
+                box-shadow: 0 0 25px rgba(24, 41, 91, 0.6), 0 0 50px rgba(42, 79, 159, 0.3);
+            }
+        }
+
+        .form-group input::placeholder {
+            color: var(--color-secondary);
+        }
+
+        .form-group select option {
+            background: #000000;
+            color: #ffffff;
+            padding: 12px;
+            font-size: 1em;
+        }
+
+        body.light-mode .form-group select {
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+        }
+
+        body.light-mode .form-group select option {
+            background: #ffffff;
+            color: #000000;
+        }
+
+        /* Enhanced select box styling */
+        .form-group {
+            position: relative;
+        }
+
+        .form-group label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .form-group label::before {
+            font-size: 1.2em;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        /* Enhanced dropdown animations */
+        @keyframes selectFocus {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        .form-group select:focus {
+            animation: selectFocus 0.3s ease;
+        }
+
+        /* Custom scrollbar for dropdowns */
+        .form-group select {
+            scrollbar-width: thin;
+            scrollbar-color: var(--color-primary) var(--bg-input);
+        }
+
+        .form-group select::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .form-group select::-webkit-scrollbar-track {
+            background: var(--bg-input);
+            border-radius: 4px;
+        }
+
+        .form-group select::-webkit-scrollbar-thumb {
+            background: var(--color-primary);
+            border-radius: 4px;
+        }
+
+        .form-group select::-webkit-scrollbar-thumb:hover {
+            background: #2a4f9f;
+        }
+
+        /* Tooltip for better UX */
+        .form-group small {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            background: rgba(255, 193, 7, 0.1);
+            border-left: 3px solid #ffc107;
+            border-radius: 6px;
+            margin-top: 8px;
+        }
+
+        .browser-selector {
+            display: none;
+            margin-bottom: 25px;
+        }
+
+        .browser-selector.show {
+            display: block;
+        }
+
+        .download-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #18295b, #2a4f9f);
+            border: none;
+            border-radius: 12px;
+            color: #ffffff;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+            box-shadow: 0 5px 20px rgba(24, 41, 91, 0.5), 0 0 40px rgba(24, 41, 91, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .download-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .download-btn:hover::before {
+            left: 100%;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 8px 30px rgba(24, 41, 91, 0.8), 0 0 60px rgba(42, 79, 159, 0.4);
+            background: linear-gradient(135deg, #2a4f9f, #18295b);
+        }
+
+        .download-btn:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        .download-btn:disabled {
+            background: #666666;
+            cursor: not-allowed;
+            opacity: 0.6;
+            transform: none;
+            animation: downloadingPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes downloadingPulse {
+            0%, 100% {
+                box-shadow: 0 5px 20px rgba(102, 102, 102, 0.5);
+            }
+            50% {
+                box-shadow: 0 5px 20px rgba(102, 102, 102, 0.8), 0 0 30px rgba(102, 102, 102, 0.4);
+            }
+        }
+
+        .progress-container {
+            display: none;
+            margin-top: 30px;
+            padding: 25px;
+            background: var(--bg-input);
+            border-radius: 12px;
+            border: 2px solid var(--color-primary);
+        }
+
+        .progress-container.show {
+            display: block;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: var(--bg-input-focus);
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #18295b, #2a4f9f, #18295b);
+            background-size: 200% 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-weight: bold;
+            position: relative;
+            overflow: hidden;
+            animation: progressShine 2s linear infinite;
+        }
+
+        @keyframes progressShine {
+            0% {
+                background-position: 200% 0;
+            }
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: progressGloss 1.5s ease-in-out infinite;
+        }
+
+        @keyframes progressGloss {
+            0% {
+                left: -100%;
+            }
+            100% {
+                left: 200%;
+            }
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            color: var(--color-text);
+            font-size: 0.95em;
+        }
+
+        .progress-info span {
+            background: rgba(24, 41, 91, 0.3);
+            padding: 8px 15px;
+            border-radius: 8px;
+        }
+
+        .message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+            animation: messageSlideIn 0.4s ease-out;
+        }
+
+        @keyframes messageSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        .message.success {
+            background: rgba(40, 167, 69, 0.3);
+            border: 2px solid var(--color-success);
+            color: var(--color-success);
+            box-shadow: 0 0 20px rgba(40, 167, 69, 0.3);
+            animation: messageSlideIn 0.4s ease-out, successPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes successPulse {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(40, 167, 69, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 30px rgba(40, 167, 69, 0.5);
+            }
+        }
+
+        .message.error {
+            background: rgba(220, 53, 69, 0.3);
+            border: 2px solid var(--color-error);
+            color: var(--color-error);
+            box-shadow: 0 0 20px rgba(220, 53, 69, 0.3);
+            animation: messageSlideIn 0.4s ease-out, errorShake 0.5s ease-in-out;
+        }
+
+        @keyframes errorShake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .message.info {
+            background: rgba(24, 41, 91, 0.3);
+            border: 2px solid var(--color-primary);
+            color: var(--color-text);
+            box-shadow: 0 0 20px rgba(24, 41, 91, 0.3);
+        }
+
+        /* Video Info Card with Thumbnail */
+        .info-card {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(24, 41, 91, 0.2);
+            border-radius: 12px;
+            border: 2px solid var(--color-primary);
+        }
+
+        .info-card.show {
+            display: block;
+        }
+
+        .info-card h3 {
+            margin-bottom: 15px;
+            color: var(--color-text);
+        }
+
+        .info-content {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        .thumbnail-preview {
+            width: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .thumbnail-preview:hover {
+            transform: scale(1.05) translateY(-5px);
+            box-shadow: 0 8px 25px rgba(24, 41, 91, 0.6), 0 0 40px rgba(24, 41, 91, 0.3);
+        }
+
+        .thumbnail-preview::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transform: rotate(45deg);
+            animation: thumbnailShimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes thumbnailShimmer {
+            0% {
+                transform: translateX(-100%) translateY(-100%) rotate(45deg);
+            }
+            100% {
+                transform: translateX(100%) translateY(100%) rotate(45deg);
+            }
+        }
+
+        .thumbnail-preview img {
+            width: 100%;
+            height: auto;
+            display: block;
+            position: relative;
+            z-index: 1;
+        }
+
+        .info-details {
+            flex: 1;
+        }
+
+        .info-card .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            margin-bottom: 8px;
+            background: var(--bg-input);
+            border-radius: 8px;
+        }
+
+        .info-card .info-item span:first-child {
+            color: var(--color-secondary);
+        }
+
+        .info-card .info-item span:last-child {
+            color: var(--color-text);
+            font-weight: bold;
+            text-align: right;
+            max-width: 70%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .playlist-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-left: 10px;
+            box-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+            animation: badgePulse 2s ease-in-out infinite;
+        }
+
+        @keyframes badgePulse {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 0 30px rgba(255, 107, 107, 0.7);
+            }
+        }
+
+        /* Batch URL Input */
+        .batch-url-container {
+            display: none;
+            margin-top: 10px;
+        }
+
+        .batch-url-container.show {
+            display: block;
+        }
+
+        .batch-url-container textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 15px;
+            background: var(--bg-input);
+            border: 2px solid var(--color-border);
+            border-radius: 10px;
+            color: var(--color-text);
+            font-size: 1em;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .batch-url-container textarea:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            background: var(--bg-input-focus);
+            box-shadow: 0 0 20px rgba(24, 41, 91, 0.4);
+        }
+
+        .url-mode-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .url-mode-btn {
+            flex: 1;
+            padding: 10px;
+            background: var(--bg-input);
+            border: 2px solid var(--color-border);
+            border-radius: 8px;
+            color: var(--color-text);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .url-mode-btn.active {
+            background: var(--color-primary);
+            color: white;
+            border-color: var(--color-primary);
+        }
+
+        .playlist-toggle {
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            background: rgba(255, 193, 7, 0.1);
+            border-left: 3px solid #ffc107;
+            border-radius: 6px;
+        }
+
+        .playlist-toggle input[type="checkbox"] {
+            width: 22px;
+            height: 22px;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background: var(--bg-input);
+            border: 2px solid var(--color-border);
+            border-radius: 5px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .playlist-toggle input[type="checkbox"]:hover {
+            border-color: var(--color-primary);
+            transform: scale(1.1);
+        }
+
+        .playlist-toggle input[type="checkbox"]:checked {
+            background: linear-gradient(135deg, #18295b, #2a4f9f);
+            border-color: var(--color-primary);
+        }
+
+        .playlist-toggle input[type="checkbox"]:checked::after {
+            content: '✓';
+            position: absolute;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .playlist-toggle label {
+            margin: 0;
+            cursor: pointer;
+            user-select: none;
+            font-weight: 500;
+        }
+
+        /* Download Queue */
+        .queue-container {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(24, 41, 91, 0.2);
+            border-radius: 12px;
+            border: 2px solid var(--color-primary);
+        }
+
+        .queue-container.show {
+            display: block;
+        }
+
+        .queue-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            background: var(--bg-input);
+            border-radius: 8px;
+            border-left: 4px solid var(--color-primary);
+            animation: queueItemSlide 0.4s ease-out;
+            transition: all 0.3s ease;
+        }
+
+        @keyframes queueItemSlide {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .queue-item:hover {
+            background: rgba(24, 41, 91, 0.15);
+            transform: translateX(5px);
+            box-shadow: 0 4px 15px rgba(24, 41, 91, 0.3);
+        }
+
+        .queue-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .queue-item-url {
+            font-size: 0.9em;
+            color: var(--color-secondary);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 70%;
+        }
+
+        .queue-item-status {
+            font-weight: bold;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+        }
+
+        .queue-item-status.downloading {
+            background: rgba(24, 41, 91, 0.3);
+            color: var(--color-primary);
+        }
+
+        .queue-item-status.completed {
+            background: rgba(40, 167, 69, 0.3);
+            color: var(--color-success);
+        }
+
+        .queue-item-status.error {
+            background: rgba(220, 53, 69, 0.3);
+            color: var(--color-error);
+        }
+
+        .queue-progress-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--bg-input-focus);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .queue-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #18295b, #2a4f9f, #18295b);
+            background-size: 200% 100%;
+            transition: width 0.3s ease;
+            animation: queueProgressShine 2s linear infinite;
+            position: relative;
+        }
+
+        @keyframes queueProgressShine {
+            0% {
+                background-position: 200% 0;
+            }
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .platform-btn {
+                min-width: 100px;
+                padding: 12px 15px;
+                font-size: 0.9em;
+            }
+
+            .options-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .info-content {
+                grid-template-columns: 1fr;
+            }
+
+            .thumbnail-preview {
+                max-width: 300px;
+                margin: 0 auto;
+            }
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid var(--color-primary);
+            color: var(--color-secondary);
+            animation: fadeInUp 1s ease-out 0.5s both;
+        }
+
+        .footer a {
+            color: var(--color-primary);
+            text-decoration: none;
+            font-weight: bold;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .footer a::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -2px;
+            left: 50%;
+            background: linear-gradient(90deg, #18295b, #2a4f9f);
+            transition: all 0.3s ease;
+            transform: translateX(-50%);
+        }
+
+        .footer a:hover {
+            color: #2a4f9f;
+            text-shadow: 0 0 10px rgba(24, 41, 91, 0.5);
+        }
+
+        .footer a:hover::after {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button class="theme-toggle" id="themeToggle" title="Toggle Theme">🌙</button>
+
+        <div class="header">
+            <h1>🎬 Video Downloader</h1>
+            <p>Download videos from YouTube, Instagram, and Facebook</p>
+        </div>
+
+        <!-- Platform Selector -->
+        <div class="platform-selector">
+            <button class="platform-btn active" data-platform="youtube">
+                🎥 YouTube
+            </button>
+            <button class="platform-btn" data-platform="instagram">
+                📸 Instagram
+            </button>
+            <button class="platform-btn" data-platform="facebook">
+                👥 Facebook
+            </button>
+        </div>
+
+        <!-- Download Form -->
+        <form id="downloadForm">
+            <div class="form-group">
+                <label for="url">🔗 Video URL :</label>
+
+                <!-- URL Mode Toggle -->
+                <div class="url-mode-toggle">
+                    <button type="button" class="url-mode-btn active" data-mode="single">Single URL</button>
+                    <button type="button" class="url-mode-btn" data-mode="batch">Batch URLs</button>
+                </div>
+
+                <!-- Single URL Input -->
+                <input
+                    type="text"
+                    id="url"
+                    name="url"
+                    placeholder="Paste video URL here..."
+                    class="single-url-input"
+                >
+
+                <!-- Batch URL Input -->
+                <div class="batch-url-container" id="batchUrlContainer">
+                    <textarea
+                        id="batchUrls"
+                        placeholder="Paste multiple URLs here (one per line)..."
+                    ></textarea>
+                </div>
+
+                <!-- Playlist Toggle (YouTube only) -->
+                <div class="playlist-toggle youtube-only" style="display: flex;">
+                    <input type="checkbox" id="playlistMode" name="playlistMode">
+                    <label for="playlistMode">📋 Download Playlist ( If URL Is A Playlist )</label>
+                </div>
+            </div>
+
+            <div class="options-grid youtube-options">
+                <div class="form-group">
+                    <label for="mode">📦 Type:</label>
+                    <select id="mode" name="mode">
+                        <option value="both">🎬 Video + Audio - Complete</option>
+                        <option value="video">🎥 Video Only - No Sound</option>
+                        <option value="audio">🎵 Audio Only - Music/Podcast</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="quality">⚙️ Quality:</label>
+                    <select id="quality" name="quality">
+                        <option value="best">⭐ Best Available - Auto Select</option>
+                        <option value="2160">🌟 4K ( 2160p ) - Ultra HD</option>
+                        <option value="1440">💎 2K ( 1440p ) - Quad HD</option>
+                        <option value="1080">🎯 Full HD ( 1080p )</option>
+                        <option value="720">✨ HD ( 720p )</option>
+                        <option value="480">📱 SD ( 480p ) - Mobile</option>
+                        <option value="360">⚡ Low ( 360p ) - Fast</option>
+                        <option value="worst">🔋 Lowest - Save Data</option>
+                    </select>
+                </div>
+
+                <div class="form-group audio-format-group">
+                    <label for="audio_format">🎵 Audio Format:</label>
+                    <select id="audio_format" name="audio_format">
+                        <option value="mp3">🎵 MP3 - Universal ( 320kbps )</option>
+                        <option value="m4a">🎼 M4A - High Quality</option>
+                        <option value="wav">🎚️ WAV - Lossless</option>
+                        <option value="opus">🎧 OPUS - Web Standard</option>
+                        <option value="flac">💿 FLAC - Studio Quality</option>
+                        <option value="aac">🔊 AAC - Apple Standard</option>
+                    </select>
+                </div>
+
+                <div class="form-group video-format-group">
+                    <label for="video_format">🎥 Video Format:</label>
+                    <select id="video_format" name="video_format">
+                        <option value="mp4">🎬 MP4 - Universal ( Recommended )</option>
+                        <option value="webm">🌐 WebM - Web Optimized</option>
+                        <option value="mkv">📦 MKV - High Quality</option>
+                        <option value="avi">🎞️ AVI - Classic Format</option>
+                        <option value="mov">🎥 MOV - Apple Format</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Browser Selector for Instagram/Facebook -->
+            <div class="browser-selector" id="browserSelector">
+                <div class="form-group">
+                    <label for="browser">🌐 Browser ( For Login ):</label>
+                    <select id="browser" name="browser">
+                        <option value="chrome">🔵 Chrome - Most Compatible</option>
+                        <option value="firefox">🦊 Firefox - Privacy Focused</option>
+                        <option value="edge">🔷 Edge - Windows Default</option>
+                        <option value="brave">🦁 Brave - Ad-Free</option>
+                        <option value="opera">🔴 Opera - Feature Rich</option>
+                    </select>
+                    <small style="color: var(--color-secondary); margin-top: 8px; display: block; font-size: 0.9em;">
+                        ⚠️ Make sure you're logged in to the selected browser
+                    </small>
+                </div>
+            </div>
+
+            <button type="submit" class="download-btn" id="downloadBtn">
+                ⬇️ Download Now
+            </button>
+        </form>
+
+        <!-- Video Info Card -->
+        <div class="info-card" id="infoCard">
+            <h3 id="infoCardTitle">📋 Video Information</h3>
+            <div class="info-content">
+                <div class="thumbnail-preview" id="thumbnailPreview">
+                    <img id="videoThumbnail" src="" alt="Video Thumbnail" style="display: none;">
+                </div>
+                <div class="info-details">
+                    <div class="info-item">
+                        <span>Title:</span>
+                        <span id="videoTitle">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span>Channel:</span>
+                        <span id="videoUploader">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span>Duration:</span>
+                        <span id="videoDuration">-</span>
+                    </div>
+                    <div class="info-item" id="videoViewsItem">
+                        <span>Views:</span>
+                        <span id="videoViews">-</span>
+                    </div>
+                    <div class="info-item" id="playlistCountItem" style="display: none;">
+                        <span>Videos in Playlist:</span>
+                        <span id="playlistCount">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Download Queue -->
+        <div class="queue-container" id="queueContainer">
+            <h3>📥 Download Queue</h3>
+            <div id="queueList"></div>
+        </div>
+
+        <!-- Progress Container -->
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill">0%</div>
+            </div>
+            <div class="progress-info">
+                <span id="progressSpeed">Speed: 0 MB/s</span>
+                <span id="progressEta">ETA: 0s</span>
+                <span id="progressStatus">Downloading...</span>
+            </div>
+        </div>
+
+        <!-- Message Container -->
+        <div class="message" id="message"></div>
+
+        <div class="footer">
+            <p>Made By Mohammed ( Star )</p>
+            <p style="font-size: 0.9em; margin-top: 5px;">© 2025 Mohammed (Star). All rights reserved.</p>
+        </div>
+    </div>
+
+    <script>
+        let currentPlatform = 'youtube';
+        let currentDownloadIds = [];
+        let eventSources = {};
+        let urlMode = 'single';
+
+        // Theme toggle
+        const themeToggle = document.getElementById('themeToggle');
+        const body = document.body;
+
+        // Load saved theme
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        if (savedTheme === 'light') {
+            body.classList.add('light-mode');
+            themeToggle.textContent = '☀️';
+        }
+
+        themeToggle.addEventListener('click', () => {
+            body.classList.toggle('light-mode');
+            const isLight = body.classList.contains('light-mode');
+            themeToggle.textContent = isLight ? '☀️' : '🌙';
+            localStorage.setItem('theme', isLight ? 'light' : 'dark');
+        });
+
+        // URL Mode Toggle
+        document.querySelectorAll('.url-mode-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.url-mode-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                urlMode = this.dataset.mode;
+
+                const batchContainer = document.getElementById('batchUrlContainer');
+                const singleInput = document.getElementById('url');
+
+                if (urlMode === 'batch') {
+                    batchContainer.classList.add('show');
+                    singleInput.style.display = 'none';
+                } else {
+                    batchContainer.classList.remove('show');
+                    singleInput.style.display = 'block';
+                }
+            });
+        });
+
+        // Platform selection
+        document.querySelectorAll('.platform-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.platform-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentPlatform = this.dataset.platform;
+
+                // Show/hide options based on platform
+                const youtubeOptions = document.querySelector('.youtube-options');
+                const browserSelector = document.getElementById('browserSelector');
+                const youtubeOnly = document.querySelectorAll('.youtube-only');
+
+                if (currentPlatform === 'youtube') {
+                    youtubeOptions.style.display = 'grid';
+                    browserSelector.classList.remove('show');
+                    youtubeOnly.forEach(el => el.style.display = 'flex');
+                } else {
+                    youtubeOptions.style.display = 'none';
+                    browserSelector.classList.add('show');
+                    youtubeOnly.forEach(el => el.style.display = 'none');
+                }
+
+                // Update placeholder
+                const urlInput = document.getElementById('url');
+                const batchUrls = document.getElementById('batchUrls');
+                if (currentPlatform === 'instagram') {
+                    urlInput.placeholder = 'Paste Instagram URL here... ( Stories, Reels, Posts )';
+                    batchUrls.placeholder = 'Paste multiple Instagram URLs here (one per line)...';
+                } else if (currentPlatform === 'facebook') {
+                    urlInput.placeholder = 'Paste Facebook URL here... ( Videos, Reels, Posts )';
+                    batchUrls.placeholder = 'Paste multiple Facebook URLs here (one per line)...';
+                } else {
+                    urlInput.placeholder = 'Paste YouTube URL here...';
+                    batchUrls.placeholder = 'Paste multiple YouTube URLs here (one per line)...';
+                }
+
+                // Clear info card
+                document.getElementById('infoCard').classList.remove('show');
+            });
+        });
+
+        // Show message
+        function showMessage(text, type = 'info') {
+            const messageEl = document.getElementById('message');
+            messageEl.textContent = text;
+            messageEl.className = `message show ${type}`;
+        }
+
+        // Hide message
+        function hideMessage() {
+            document.getElementById('message').classList.remove('show');
+        }
+
+        // Format time
+        function formatTime(seconds) {
+            if (!seconds || seconds === 0) return '-';
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+
+            if (hours > 0) {
+                return `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            }
+            return `${minutes}:${String(secs).padStart(2, '0')}`;
+        }
+
+        // Format number with commas
+        function formatNumber(num) {
+            if (!num) return '-';
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+
+        // Stream progress via SSE
+        function streamProgress(downloadId, isFirstDownload = true) {
+            const eventSource = new EventSource(`/api/progress/stream/${downloadId}`);
+            eventSources[downloadId] = eventSource;
+
+            eventSource.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                updateQueueItem(downloadId, data);
+
+                // Update main progress bar for first download
+                if (isFirstDownload) {
+                    const progressFill = document.getElementById('progressFill');
+                    const progressSpeed = document.getElementById('progressSpeed');
+                    const progressEta = document.getElementById('progressEta');
+                    const progressStatus = document.getElementById('progressStatus');
+
+                    if (data.status === 'downloading') {
+                        progressFill.style.width = `${data.progress}%`;
+                        progressFill.textContent = `${data.progress.toFixed(1)}%`;
+                        progressSpeed.textContent = `Speed: ${data.speed} MB/s`;
+                        progressEta.textContent = `ETA: ${data.eta}s`;
+                        progressStatus.textContent = 'Downloading...';
+                    } else if (data.status === 'completed' || data.status === 'finished') {
+                        progressFill.style.width = '100%';
+                        progressFill.textContent = '100%';
+                        progressStatus.textContent = '✓ Completed';
+                    } else if (data.status === 'starting') {
+                        progressStatus.textContent = 'Starting download...';
+                    }
+                }
+
+                // Close connection when done
+                if (data.status === 'completed' || data.status === 'error') {
+                    eventSource.close();
+                    delete eventSources[downloadId];
+
+                    // Check if all downloads are complete
+                    if (Object.keys(eventSources).length === 0) {
+                        document.getElementById('downloadBtn').disabled = false;
+                        if (data.status === 'completed') {
+                            showMessage('All downloads completed! Check your Downloads folder.', 'success');
+                        }
+                    }
+                }
+            };
+
+            eventSource.onerror = function(error) {
+                console.error('SSE Error:', error);
+                eventSource.close();
+                delete eventSources[downloadId];
+            };
+        }
+
+        // Update queue item
+        function updateQueueItem(downloadId, data) {
+            const queueItem = document.getElementById(`queue-${downloadId}`);
+            if (!queueItem) return;
+
+            const statusEl = queueItem.querySelector('.queue-item-status');
+            const progressBar = queueItem.querySelector('.queue-progress-fill');
+
+            statusEl.textContent = data.status;
+            statusEl.className = `queue-item-status ${data.status}`;
+            progressBar.style.width = `${data.progress || 0}%`;
+        }
+
+        // Add to queue display
+        function addToQueue(downloadId, url) {
+            const queueContainer = document.getElementById('queueContainer');
+            const queueList = document.getElementById('queueList');
+
+            queueContainer.classList.add('show');
+
+            const queueItem = document.createElement('div');
+            queueItem.className = 'queue-item';
+            queueItem.id = `queue-${downloadId}`;
+            queueItem.innerHTML = `
+                <div class="queue-item-header">
+                    <div class="queue-item-url" title="${url}">${url}</div>
+                    <div class="queue-item-status starting">starting</div>
+                </div>
+                <div class="queue-progress-bar">
+                    <div class="queue-progress-fill" style="width: 0%"></div>
+                </div>
+            `;
+
+            queueList.appendChild(queueItem);
+        }
+
+        // Form submission
+        document.getElementById('downloadForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            let urls = [];
+
+            if (urlMode === 'batch') {
+                const batchText = document.getElementById('batchUrls').value.trim();
+                urls = batchText.split('\n').filter(u => u.trim()).map(u => u.trim());
+            } else {
+                const singleUrl = document.getElementById('url').value.trim();
+                if (singleUrl) urls = [singleUrl];
+            }
+
+            if (urls.length === 0) {
+                showMessage('Please enter at least one video URL', 'error');
+                return;
+            }
+
+            const quality = document.getElementById('quality').value;
+            const mode = document.getElementById('mode').value;
+            const audioFormat = document.getElementById('audio_format').value;
+            const videoFormat = document.getElementById('video_format').value;
+            const browser = document.getElementById('browser').value;
+            const isPlaylist = document.getElementById('playlistMode').checked;
+
+            // Disable button and show progress
+            document.getElementById('downloadBtn').disabled = true;
+            document.getElementById('progressContainer').classList.add('show');
+            document.getElementById('progressFill').style.width = '0%';
+            document.getElementById('queueList').innerHTML = '';
+            hideMessage();
+
+            // Send download request
+            fetch('/api/download', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    urls: urls,
+                    url: urls[0],  // backward compatibility
+                    quality: quality,
+                    mode: mode,
+                    audio_format: audioFormat,
+                    video_format: videoFormat,
+                    platform: currentPlatform,
+                    browser: browser,
+                    is_playlist: isPlaylist
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showMessage(data.error, 'error');
+                    document.getElementById('downloadBtn').disabled = false;
+                    document.getElementById('progressContainer').classList.remove('show');
+                } else {
+                    currentDownloadIds = data.download_ids || [data.download_id];
+                    showMessage(`Starting ${currentDownloadIds.length} download(s)...`, 'info');
+
+                    // Add all downloads to queue and start SSE streaming
+                    currentDownloadIds.forEach((downloadId, index) => {
+                        addToQueue(downloadId, urls[index] || urls[0]);
+                        streamProgress(downloadId, index === 0);
+                    });
+                }
+            })
+            .catch(error => {
+                showMessage(`Error: ${error.message}`, 'error');
+                document.getElementById('downloadBtn').disabled = false;
+                document.getElementById('progressContainer').classList.remove('show');
+            });
+        });
+
+        // Get video info on URL change (YouTube only)
+        document.getElementById('url').addEventListener('blur', function() {
+            const url = this.value.trim();
+            if (url && currentPlatform === 'youtube') {
+                fetch('/api/info', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: url })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.error) {
+                        const infoCard = document.getElementById('infoCard');
+                        const thumbnailImg = document.getElementById('videoThumbnail');
+                        const infoCardTitle = document.getElementById('infoCardTitle');
+                        const playlistCountItem = document.getElementById('playlistCountItem');
+                        const videoViewsItem = document.getElementById('videoViewsItem');
+
+                        // Show thumbnail
+                        if (data.thumbnail) {
+                            thumbnailImg.src = data.thumbnail;
+                            thumbnailImg.style.display = 'block';
+                        } else {
+                            thumbnailImg.style.display = 'none';
+                        }
+
+                        // Check if playlist
+                        if (data.is_playlist) {
+                            infoCardTitle.innerHTML = '📋 Playlist Information <span class="playlist-badge">PLAYLIST</span>';
+                            document.getElementById('videoTitle').textContent = data.playlist_title || '-';
+                            document.getElementById('playlistCount').textContent = data.playlist_count || '-';
+                            playlistCountItem.style.display = 'flex';
+                            document.getElementById('videoDuration').textContent = '-';
+                            videoViewsItem.style.display = 'none';
+
+                            // Auto-enable playlist mode
+                            document.getElementById('playlistMode').checked = true;
+                        } else {
+                            infoCardTitle.textContent = '📋 Video Information';
+                            document.getElementById('videoTitle').textContent = data.title || '-';
+                            document.getElementById('videoDuration').textContent = formatTime(data.duration);
+                            document.getElementById('videoViews').textContent = formatNumber(data.views);
+                            playlistCountItem.style.display = 'none';
+                            videoViewsItem.style.display = 'flex';
+                        }
+
+                        document.getElementById('videoUploader').textContent = data.uploader || data.channel || '-';
+                        infoCard.classList.add('show');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching video info:', error);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
+

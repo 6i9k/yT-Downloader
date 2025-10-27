@@ -1,0 +1,27 @@
+{
+  "name": "YouTube Downloader",
+  "description": "Advanced video downloader for YouTube, Instagram, and Facebook",
+  "repository": "https://github.com/YOUR_USERNAME/youtube-downloader",
+  "keywords": ["python", "flask", "youtube", "downloader", "instagram", "facebook"],
+  "buildpacks": [
+    {
+      "url": "https://github.com/jonathanong/heroku-buildpack-ffmpeg-latest.git"
+    },
+    {
+      "url": "heroku/python"
+    }
+  ],
+  "env": {
+    "SECRET_KEY": {
+      "description": "Secret key for Flask sessions",
+      "generator": "secret"
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "free"
+    }
+  }
+}
+
